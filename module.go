@@ -12,8 +12,9 @@ type Module struct {
 
 	PreDeclares []*PreDeclaredValue
 	Functions   []*Function
+	Structs     []*StructDescription
 
-	DataTypes []*DataTypeMember
+	//DataTypes []*DataTypeMember
 }
 
 type StarlarkModule struct {
@@ -30,6 +31,10 @@ func (m *Module) Get() *StarlarkModule {
 	for _, member := range m.Functions {
 		member.moduleName = m.Name
 		members[member.FuncName] = member
+	}
+	for _, member := range m.Structs {
+		member.moduleName = m.Name
+		members[member.Name] = member.ProvideDoc()
 	}
 
 	return &StarlarkModule{
