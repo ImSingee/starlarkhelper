@@ -9,9 +9,9 @@ import (
 // CanHelp 接口为自定义类型提供了输出帮助信息的能力
 // 内部的 Function Struct Module 已经实现了 CanHelp
 type CanHelp interface {
-	GetDefDoc() string                // 获取声明信息，应当包括名称、类型，不应包括任何用法解释
-	GetSimpleDesc() string            // 获取简单说明信息，应当在一行内完成，不应过长
-	GetFullDesc(mode HelpMode) string // 获取详细说明信息，不应重复包括 GetSimpleDesc 中的内容，用于说明具体的使用方式，换行应使用 LF
+	GetDefDoc(mode HelpMode) string     // 获取声明信息，应当包括名称、类型，不应包括任何用法解释
+	GetSimpleDesc(mode HelpMode) string // 获取简单说明信息，应当在一行内完成，不应过长
+	GetFullDesc(mode HelpMode) string   // 获取详细说明信息，不应重复包括 GetSimpleDesc 中的内容，用于说明具体的使用方式，换行应使用 LF
 }
 
 type HelpMode uint8
@@ -22,48 +22,42 @@ const (
 	HelpModeHTML                     // 以 html 转义 markdown 格式信息
 )
 
-func title(s string, mode HelpMode) string {
-	switch mode {
-	case HelpModeTerminal:
-		return terminalBlueString(s)
-	default:
-		return s
-	}
-}
-
 func tidyAndIndent(s string) string {
-	return strings.ReplaceAll(strings.TrimSpace(s), "\n", "  \n")
+	return "  " + strings.ReplaceAll(strings.TrimSpace(s), "\n", "\n  ")
 }
 
 func GetHelpFor(v starlark.Value, mode HelpMode) string {
 	if canHelp, ok := v.(CanHelp); ok {
-		b := strings.Builder{}
-
-		// 定义
-		def := canHelp.GetDefDoc()
-		b.WriteString(title(strings.TrimSpace(def), mode))
-		b.WriteString("\n")
-
-		// short
-		if short := canHelp.GetSimpleDesc(); short != "" {
-			b.WriteString(tidyAndIndent(short))
-			b.WriteString("\n")
-		}
-
-		// long
-		if long := canHelp.GetFullDesc(mode); long != "" {
-			b.WriteString(tidyAndIndent(long))
-			b.WriteString("\n")
-		}
-
-		return b.String()
+		return GetHelperHelpFor(canHelp, mode)
+	} else {
+		return getGeneralHelpFor(v, mode)
 	}
-
-	return getGeneralHelpFor(v)
-
 }
 
-func getGeneralHelpFor(v starlark.Value) string {
+func GetHelperHelpFor(v CanHelp, mode HelpMode) string {
+	b := strings.Builder{}
+
+	// 定义
+	def := v.GetDefDoc(mode)
+	b.WriteString(strings.TrimSpace(def))
+	b.WriteString("\n")
+
+	// short
+	if short := v.GetSimpleDesc(mode); short != "" {
+		b.WriteString(tidyAndIndent(short))
+		b.WriteString("\n")
+	}
+
+	// long
+	if long := v.GetFullDesc(mode); long != "" {
+		b.WriteString(tidyAndIndent(long))
+		b.WriteString("\n")
+	}
+
+	return b.String()
+}
+
+func getGeneralHelpFor(v starlark.Value, mode HelpMode) string {
 	// TODO: 生成更多信息
 
 	return fmt.Sprintf("%s\n%s\n", v.Type(), tidyAndIndent(v.String()))

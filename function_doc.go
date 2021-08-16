@@ -7,11 +7,18 @@ import (
 
 var _ CanHelp = (*Function)(nil)
 
-func (f *Function) GetDefDoc() string {
-	return fmt.Sprintf("%s(%s)%s", f.Name(), f.GetArgsInDef(), f.GetArgOutDef())
+func (f *Function) GetDefDoc(mode HelpMode) string {
+	def := fmt.Sprintf("%s(%s)%s", f.Name(), f.GetArgsInDef(), f.GetArgOutDef())
+
+	switch mode {
+	case HelpModeTerminal:
+		return terminalBlueString(def)
+	default:
+		return def
+	}
 }
 
-func (f *Function) GetSimpleDesc() string {
+func (f *Function) GetSimpleDesc(mode HelpMode) string {
 	return f.Short
 }
 
@@ -75,24 +82,7 @@ func (f *Function) GetFullDesc(mode HelpMode) string {
 	}
 
 	// example
-	if examples := f.Examples; len(examples) != 0 {
-		for _, example := range examples {
-			switch mode {
-			case HelpModeTerminal:
-				b.WriteString(terminalUnderlineString("Example: "))
-			default:
-				b.WriteString("Example: ")
-			}
-			b.WriteString(strings.ReplaceAll(strings.TrimSpace(example.Comment), "\n", "; "))
-			b.WriteString("\n")
-
-			for _, line := range strings.Split(strings.TrimSpace(example.Code), "\n") {
-				b.WriteString("  ")
-				b.WriteString(terminalItalicString(line))
-				b.WriteString("\n")
-			}
-		}
-	}
+	b.WriteString(GetExamplesDoc(f.Examples, mode))
 
 	return b.String()
 }

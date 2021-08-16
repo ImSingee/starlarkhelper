@@ -1,8 +1,6 @@
 package starlarkhelper
 
 import (
-	"fmt"
-
 	"go.starlark.net/starlark"
 )
 
@@ -18,12 +16,4 @@ type PreDeclaredValue struct {
 
 func (m *PreDeclaredValue) getForModule(moduleName string) starlark.Value {
 	return m.Value
-}
-
-func (m *PreDeclaredValue) Type() string {
-	return m.Value.Type()
-}
-
-func (m *PreDeclaredValue) GetDefDoc() string {
-	return fmt.Sprintf("%s : %s = %s", m.Name, m.Type(), m.Value.String())
 }

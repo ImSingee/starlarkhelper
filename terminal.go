@@ -6,6 +6,7 @@ const (
 	underline = "\x1b[4m"
 
 	blue = "\x1b[34m"
+	cyan = "\x1b[36m"
 
 	unformat = "\x1b[0m"
 )
@@ -24,4 +25,8 @@ func terminalBoldString(s string) string {
 
 func terminalBlueString(s string) string {
 	return blue + s + unformat
+}
+
+func terminalCyanString(s string) string {
+	return cyan + s + unformat
 }

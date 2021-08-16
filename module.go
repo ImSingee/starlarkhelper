@@ -8,6 +8,8 @@ import (
 type Module struct {
 	Name string
 
+	Short string // module 功能简介
+
 	PreDeclares []*PreDeclaredValue
 	Functions   []*Function
 
