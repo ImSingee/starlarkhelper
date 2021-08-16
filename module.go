@@ -8,7 +8,7 @@ import (
 type Module struct {
 	Name string
 
-	PreDeclares []*PreDeclaredMember
+	PreDeclares []*PreDeclaredValue
 	Functions   []*Function
 
 	DataTypes []*DataTypeMember
@@ -19,8 +19,6 @@ type StarlarkModule struct {
 
 	internal *Module
 }
-
-func (m *StarlarkModule) Internal() *Module { return m.internal }
 
 func (m *Module) Get() *StarlarkModule {
 	members := make(starlark.StringDict, len(m.PreDeclares)+len(m.Functions))

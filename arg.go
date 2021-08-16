@@ -1,5 +1,7 @@
 package starlarkhelper
 
+import "strings"
+
 type Arg interface {
 	isArg()
 	isArgs()
@@ -16,4 +18,46 @@ type Arg interface {
 
 	DocShort() string
 	DocLong() string
+}
+
+func ArgGetInDef(a Arg, mode HelpMode) string {
+	if a == nil {
+		return ""
+	}
+
+	b := strings.Builder{}
+	b.Grow(64)
+
+	switch mode {
+	case HelpModeTerminal:
+		b.WriteString(terminalBoldString(a.InName()))
+	default:
+		b.WriteString(a.InName())
+	}
+
+	t := a.InType()
+	d := a.InDefaultValue()
+
+	if t != "" {
+		b.WriteString(": ")
+		b.WriteString(t)
+	}
+	if d != "" {
+		b.WriteString(" = ")
+		b.WriteString(d)
+	}
+
+	return b.String()
+}
+
+func ArgGetOutDef(a Arg) string {
+	if a == nil {
+		return ""
+	}
+	r := a.OutType()
+	if r == "" || r == "None" {
+		return ""
+	} else {
+		return r
+	}
 }

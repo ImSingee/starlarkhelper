@@ -7,9 +7,10 @@ import (
 
 // Function 函数类型
 type Function struct {
-	FuncName string    // 函数名称
-	Short    string    // 简介
-	Long     string    // 详细帮助信息
+	FuncName string // 函数名称
+	Short    string // 简介
+	Long     string // 详细帮助信息
+
 	Examples []Example // 示例
 
 	Fn     BuiltinFunc
@@ -20,7 +21,7 @@ type Function struct {
 	moduleName string         // 模块名称，来源于 Module 时会用到
 }
 
-//var _ starlark.Callable = (*Function)(nil)
+var _ starlark.Callable = (*Function)(nil)
 
 // NewBuiltinFunction 快速创建一个无文档的 Function 示例
 func NewBuiltinFunction(name string, f BuiltinFunc) *Function {

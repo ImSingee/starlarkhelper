@@ -21,6 +21,10 @@ type Helper struct {
 	Err error
 }
 
+func (h *Helper) Print(msg string) {
+	h.Thread.Print(h.Thread, msg)
+}
+
 func (h *Helper) withErrorHandler(f func() error) *Helper {
 	if h.Err == nil {
 		h.Err = f()
@@ -129,4 +133,44 @@ func (h *Helper) GetKeywordArgsBool(key string, defaultValue bool) (bool, error)
 func (h *Helper) ConvertString(convert starlark.String, to *string) *Helper {
 	*to = string(convert)
 	return h
+}
+
+// ArgsCount 返回传入的 args 数量
+func (h *Helper) ArgsCount() int {
+	return h.Args.Len() + len(h.Kwargs)
+}
+
+// CheckExactArgs 检查是否传递了指定数量的参数，如果否则返回 error
+func (h *Helper) CheckExactArgs(count int) error {
+	c := h.ArgsCount()
+
+	if c != count {
+		return fmt.Errorf("expect %d args, got %d", count, c)
+	}
+
+	return nil
+}
+
+// CheckMinArgs 检查是否传递了至少指定数量的参数，如果否则返回 error
+func (h *Helper) CheckMinArgs(count int) error {
+	c := h.ArgsCount()
+
+	if c < count {
+		return fmt.Errorf("expect at least %d args, got %d", count, c)
+	}
+
+	return nil
+}
+
+// GetFirstArg 获得第一个参数
+func (h *Helper) GetFirstArg() (starlark.Value, error) {
+	if err := h.CheckMinArgs(1); err != nil {
+		return nil, err
+	}
+
+	if h.Args.Len() > 0 {
+		return h.Args.Index(0), nil
+	} else {
+		return h.Kwargs[0].Index(1), nil
+	}
 }
