@@ -40,26 +40,16 @@ func (f *Function) Name() string {
 	}
 }
 
-func (f *Function) String() string { return fmt.Sprintf("<built-in function %s>", f.Name()) }
-
-func (f *Function) Type() string { return "builtin_function_or_method" }
+func (f *Function) String() string           { return fmt.Sprintf("<built-in function %s>", f.Name()) }
+func (f *Function) Type() string             { return "builtin_function_or_method" }
+func (f *Function) Receiver() starlark.Value { return f.recv }
+func (f *Function) Truth() starlark.Bool     { return true }
+func (f *Function) Hash() (uint32, error)    { return Hash(f.Name(), 3212), nil }
 
 func (f *Function) Freeze() {
 	if f.recv != nil {
 		f.recv.Freeze()
 	}
-}
-
-func (f *Function) Receiver() starlark.Value { return f.recv }
-
-func (f *Function) Truth() starlark.Bool { return true }
-
-func (f *Function) Hash() (uint32, error) { // copy from starlark BuiltinFunc.Hash
-	h := hashString(f.Name())
-	if f.recv != nil {
-		h ^= 5521
-	}
-	return h, nil
 }
 
 func (f *Function) CallInternal(thread *starlark.Thread, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
