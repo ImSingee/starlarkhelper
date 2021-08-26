@@ -174,3 +174,7 @@ func (h *Helper) GetFirstArg() (starlark.Value, error) {
 		return h.Kwargs[0].Index(1), nil
 	}
 }
+
+func (h *Helper) GetAllPositionalArgs() []starlark.Value {
+	return []starlark.Value(h.Args)
+}
