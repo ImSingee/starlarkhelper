@@ -225,6 +225,27 @@ func (h *Helper) GetKeywordArgsUint64WithDefault(key string, defaultValue uint64
 	return b, err
 }
 
+// GetKeywordArgsStringList 从 keyword args 中提取出指定 key 对应的值并转换为 []string 类型
+// If type of key is a single string, it's also valid and will return a single element string slice
+func (h *Helper) GetKeywordArgsStringList(key string) ([]string, error) {
+	vv := h.GetKeywordArgs(key)
+	if vv == nil {
+		return nil, ErrArgNotExist{key}
+	}
+
+	return ToStringList(vv)
+}
+
+// GetKeywordArgsStringListWithDefault like GetKeywordArgsStringList but accept a defaultValue arg
+func (h *Helper) GetKeywordArgsStringListWithDefault(key string, defaultValue []string) ([]string, error) {
+	b, err := h.GetKeywordArgsStringList(key)
+	if IsArgNotExist(err) {
+		return defaultValue, nil
+	}
+
+	return b, err
+}
+
 // ArgsCount 返回传入的 args 数量
 func (h *Helper) ArgsCount() int {
 	return len(h.PositionalArgs) + len(h.kwargs)
