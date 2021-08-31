@@ -12,13 +12,18 @@ type BuiltinFunc func(h Helper) (starlark.Value, error)
 type UnpackArgsFunc func(pairs ...interface{}) error
 
 type Helper struct {
-	Name   string
-	Thread *starlark.Thread
-	Fn     *Function
-	Args   starlark.Tuple
-	Kwargs []starlark.Tuple
+	Name           string
+	Thread         *starlark.Thread
+	Fn             *Function
+	PositionalArgs []starlark.Value
+	KeywordArgs    starlark.StringDict
+
+	Args   starlark.Tuple   // Deprecated: Args
+	Kwargs []starlark.Tuple // Deprecated: Kwargs
 
 	Err error
+
+	kwargs []starlark.Tuple // original kwargs
 }
 
 func (h *Helper) Print(msg string) {
@@ -34,20 +39,20 @@ func (h *Helper) withErrorHandler(f func() error) *Helper {
 
 func (h *Helper) UnpackArgs(pairs ...interface{}) *Helper {
 	return h.withErrorHandler(func() error {
-		return starlark.UnpackArgs(h.Name, h.Args, h.Kwargs, pairs...)
+		return starlark.UnpackArgs(h.Name, h.PositionalArgs, h.kwargs, pairs...)
 	})
 }
 
 // UnpackArgsIgnoreKeyword 类似于 UnpackArgs，但是忽略命名参数
 func (h *Helper) UnpackArgsIgnoreKeyword(pairs ...interface{}) *Helper {
 	return h.withErrorHandler(func() error {
-		return starlark.UnpackArgs(h.Name, h.Args, nil, pairs...)
+		return starlark.UnpackArgs(h.Name, h.PositionalArgs, nil, pairs...)
 	})
 }
 
 func (h *Helper) UnpackPositionalArgs(min int, vars ...interface{}) *Helper {
 	return h.withErrorHandler(func() error {
-		return starlark.UnpackPositionalArgs(h.Name, h.Args, h.Kwargs, min, vars...)
+		return starlark.UnpackPositionalArgs(h.Name, h.PositionalArgs, h.kwargs, min, vars...)
 	})
 }
 
@@ -75,7 +80,7 @@ func (h *Helper) UnpackBasicArgs(pairs ...interface{}) *Helper {
 			pairs[i*2+1] = &ppp[i][2] // 指向 starlark 类型的指针
 		}
 
-		err := starlark.UnpackArgs(h.Name, h.Args, h.Kwargs, pairs...)
+		err := starlark.UnpackArgs(h.Name, h.PositionalArgs, h.kwargs, pairs...)
 		if err != nil {
 			return err
 		}
@@ -113,15 +118,7 @@ func (h *Helper) UnpackBasicArgs(pairs ...interface{}) *Helper {
 
 // GetKeywordArgs 从 keyword args 中提取出指定 key 对应的值，如果值不存在返回 nil
 func (h *Helper) GetKeywordArgs(key string) starlark.Value {
-	for _, pair := range h.Kwargs {
-		kk := pair[0].(starlark.String).GoString()
-
-		if kk == key {
-			return pair[1]
-		}
-	}
-
-	return nil
+	return h.KeywordArgs[key]
 }
 
 // GetKeywordArgsString 从 keyword args 中提取出指定 key 对应的值并转换为 string 类型
@@ -230,7 +227,7 @@ func (h *Helper) GetKeywordArgsUint64WithDefault(key string, defaultValue uint64
 
 // ArgsCount 返回传入的 args 数量
 func (h *Helper) ArgsCount() int {
-	return h.Args.Len() + len(h.Kwargs)
+	return len(h.PositionalArgs) + len(h.kwargs)
 }
 
 // CheckExactArgs 检查是否传递了指定数量的参数，如果否则返回 error
@@ -261,29 +258,53 @@ func (h *Helper) GetFirstArg() (starlark.Value, error) {
 		return nil, err
 	}
 
-	if h.Args.Len() > 0 {
-		return h.Args.Index(0), nil
+	if len(h.PositionalArgs) > 0 {
+		return h.PositionalArgs[0], nil
 	} else {
-		return h.Kwargs[0].Index(1), nil
+		return h.kwargs[0].Index(1), nil
 	}
 }
 
 func (h *Helper) GetAllPositionalArgs() []starlark.Value {
-	return []starlark.Value(h.Args)
+	return h.PositionalArgs
 }
 
-func (h *Helper) ContainKeywordArg(key ...string) bool {
-	for _, k := range key {
-		for _, pair := range h.Kwargs {
-			kk := pair[0].(starlark.String).GoString()
+func (h *Helper) ContainKeywordArg(key string) bool {
+	return h.KeywordArgs.Has(key)
+}
 
-			if kk == k {
-				return true
-			}
+// CheckContainKeywordArg will return error if there is any keyword arguments passed in not exist.
+// If there are other keyword arguments, won't error. If you want to check that, maybe you want to use CheckOnlyContainKeywordArg.
+func (h *Helper) CheckContainKeywordArg(keys ...string) error {
+	for _, k := range keys {
+		if !h.ContainKeywordArg(k) {
+			return ErrArgNotExist{k}
+		}
+	}
+	return nil
+}
+
+// CheckOnlyContainKeywordArg will return error if there is any keyword arguments except for passed in keys.
+// If any of keys not exist, won't error. If you want to check that, maybe you want to use CheckContainKeywordArg
+func (h *Helper) CheckOnlyContainKeywordArg(keys ...string) error {
+	sets := make(map[string]struct{}, len(keys))
+	for _, k := range keys {
+		sets[k] = struct{}{}
+	}
+
+	for k := range h.KeywordArgs {
+		if _, ok := sets[k]; !ok {
+			return ErrArgExist{k}
 		}
 	}
 
-	return false
+	return nil
+}
+
+type ErrArgExist struct{ ArgName string }
+
+func (e ErrArgExist) Error() string {
+	return fmt.Sprintf("arg %s: exist", e.ArgName)
 }
 
 type ErrArgNotExist struct{ ArgName string }
@@ -299,6 +320,10 @@ type ErrArgTypeMismatch struct {
 
 func (e ErrArgTypeMismatch) Error() string {
 	return fmt.Sprintf("arg %s: invalid type (expect %s)", e.ArgName, e.ExpectType)
+}
+
+func IsArgExist(err error) bool {
+	return errors.Is(err, ErrArgExist{})
 }
 
 func IsArgNotExist(err error) bool {

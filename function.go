@@ -53,5 +53,21 @@ func (f *Function) Freeze() {
 }
 
 func (f *Function) CallInternal(thread *starlark.Thread, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	return f.Fn(Helper{Name: f.Name(), Thread: thread, Args: args, Kwargs: kwargs})
+	return f.Fn(Helper{
+		Name:           f.Name(),
+		Thread:         thread,
+		PositionalArgs: []starlark.Value(args),
+		KeywordArgs:    convertKwargsToStringDict(kwargs),
+		kwargs:         kwargs,
+		Args:           args,
+		Kwargs:         kwargs,
+	})
+}
+
+func convertKwargsToStringDict(kwargs []starlark.Tuple) starlark.StringDict {
+	d := make(starlark.StringDict, len(kwargs))
+	for _, pair := range kwargs {
+		d[string(pair[0].(starlark.String))] = pair[1]
+	}
+	return d
 }
