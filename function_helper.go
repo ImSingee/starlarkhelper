@@ -113,26 +113,119 @@ func (h *Helper) UnpackBasicArgs(pairs ...interface{}) *Helper {
 
 // GetKeywordArgs 从 keyword args 中提取出指定 key 对应的值，如果值不存在返回 nil
 func (h *Helper) GetKeywordArgs(key string) starlark.Value {
-	return GetFromArgs(h.Kwargs, key)
+	for _, pair := range h.Kwargs {
+		kk := pair[0].(starlark.String).GoString()
+
+		if kk == key {
+			return pair[1]
+		}
+	}
+
+	return nil
 }
 
-// GetKeywordArgsBool 从 keyword args 中提取出指定 key 对应的值
-func (h *Helper) GetKeywordArgsBool(key string, defaultValue bool) (bool, error) {
-	vv := GetFromArgs(h.Kwargs, key)
+// GetKeywordArgsString 从 keyword args 中提取出指定 key 对应的值并转换为 string 类型
+func (h *Helper) GetKeywordArgsString(key string) (string, error) {
+	vv := h.GetKeywordArgs(key)
 	if vv == nil {
+		return "", ErrArgNotExist{key}
+	}
+
+	if v, ok := vv.(starlark.String); ok {
+		return string(v), nil
+	}
+
+	return "", ErrArgTypeMismatch{key, "string"}
+}
+
+// GetKeywordArgsStringWithDefault like GetKeywordArgsString but accept a defaultValue arg
+func (h *Helper) GetKeywordArgsStringWithDefault(key string, defaultValue string) (string, error) {
+	b, err := h.GetKeywordArgsString(key)
+	if IsArgNotExist(err) {
 		return defaultValue, nil
+	}
+
+	return b, err
+}
+
+// GetKeywordArgsBool 从 keyword args 中提取出指定 key 对应的值并转换为 int64 类型
+func (h *Helper) GetKeywordArgsBool(key string) (bool, error) {
+	vv := h.GetKeywordArgs(key)
+	if vv == nil {
+		return false, ErrArgNotExist{key}
 	}
 
 	if v, ok := vv.(starlark.Bool); ok {
 		return bool(v), nil
 	}
 
-	return false, fmt.Errorf("arg %s: invalid type (not bool)", key)
+	return false, ErrArgTypeMismatch{key, "bool"}
 }
 
-func (h *Helper) ConvertString(convert starlark.String, to *string) *Helper {
-	*to = string(convert)
-	return h
+// GetKeywordArgsBoolWithDefault like GetKeywordArgsBool but accept a defaultValue arg
+func (h *Helper) GetKeywordArgsBoolWithDefault(key string, defaultValue bool) (bool, error) {
+	b, err := h.GetKeywordArgsBool(key)
+	if IsArgNotExist(err) {
+		return defaultValue, nil
+	}
+
+	return b, err
+}
+
+// GetKeywordArgsInt64 从 keyword args 中提取出指定 key 对应的值并转换为 int64 类型
+func (h *Helper) GetKeywordArgsInt64(key string) (int64, error) {
+	vv := h.GetKeywordArgs(key)
+	if vv == nil {
+		return 0, ErrArgNotExist{key}
+	}
+
+	if v, ok := vv.(starlark.Int); ok {
+		if vvv, ok := v.Int64(); ok {
+			return vvv, nil
+		} else {
+			return 0, ErrArgTypeMismatch{key, "int64: overflow"}
+		}
+	}
+
+	return 0, ErrArgTypeMismatch{key, "int"}
+}
+
+// GetKeywordArgsInt64WithDefault like GetKeywordArgsInt64 but accept a defaultValue arg
+func (h *Helper) GetKeywordArgsInt64WithDefault(key string, defaultValue int64) (int64, error) {
+	b, err := h.GetKeywordArgsInt64(key)
+	if IsArgNotExist(err) {
+		return defaultValue, nil
+	}
+
+	return b, err
+}
+
+// GetKeywordArgsUint64 从 keyword args 中提取出指定 key 对应的值并转换为 uint64 类型
+func (h *Helper) GetKeywordArgsUint64(key string) (uint64, error) {
+	vv := h.GetKeywordArgs(key)
+	if vv == nil {
+		return 0, ErrArgNotExist{key}
+	}
+
+	if v, ok := vv.(starlark.Int); ok {
+		if vvv, ok := v.Uint64(); ok {
+			return vvv, nil
+		} else {
+			return 0, ErrArgTypeMismatch{key, "uint64: overflow"}
+		}
+	}
+
+	return 0, ErrArgTypeMismatch{key, "int (positive)"}
+}
+
+// GetKeywordArgsUint64WithDefault like GetKeywordArgsUint64 but accept a defaultValue arg
+func (h *Helper) GetKeywordArgsUint64WithDefault(key string, defaultValue uint64) (uint64, error) {
+	b, err := h.GetKeywordArgsUint64(key)
+	if IsArgNotExist(err) {
+		return defaultValue, nil
+	}
+
+	return b, err
 }
 
 // ArgsCount 返回传入的 args 数量
@@ -177,4 +270,41 @@ func (h *Helper) GetFirstArg() (starlark.Value, error) {
 
 func (h *Helper) GetAllPositionalArgs() []starlark.Value {
 	return []starlark.Value(h.Args)
+}
+
+func (h *Helper) ContainKeywordArg(key ...string) bool {
+	for _, k := range key {
+		for _, pair := range h.Kwargs {
+			kk := pair[0].(starlark.String).GoString()
+
+			if kk == k {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+type ErrArgNotExist struct{ ArgName string }
+
+func (e ErrArgNotExist) Error() string {
+	return fmt.Sprintf("arg %s: not exist", e.ArgName)
+}
+
+type ErrArgTypeMismatch struct {
+	ArgName    string
+	ExpectType string
+}
+
+func (e ErrArgTypeMismatch) Error() string {
+	return fmt.Sprintf("arg %s: invalid type (expect %s)", e.ArgName, e.ExpectType)
+}
+
+func IsArgNotExist(err error) bool {
+	return errors.Is(err, ErrArgNotExist{})
+}
+
+func IsArgTypeMismatch(err error) bool {
+	return errors.Is(err, ErrArgTypeMismatch{})
 }

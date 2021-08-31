@@ -6,6 +6,7 @@ import (
 	"go.starlark.net/starlark"
 )
 
+// Deprecated: CheckArgsContain
 func CheckArgsContain(kwargs []starlark.Tuple, key ...string) bool {
 	for _, k := range key {
 		for _, pair := range kwargs {
@@ -20,7 +21,7 @@ func CheckArgsContain(kwargs []starlark.Tuple, key ...string) bool {
 	return false
 }
 
-// GetFromArgs 从传入的 keyword args 中提取出指定 key 对应的值
+// Deprecated: GetFromArgs 从传入的 keyword args 中提取出指定 key 对应的值
 // kwargs 必须是函数所接收到的，否则会 panic
 // 如果 key 不存在返回 nil
 func GetFromArgs(kwargs []starlark.Tuple, key string) starlark.Value {
@@ -35,7 +36,7 @@ func GetFromArgs(kwargs []starlark.Tuple, key string) starlark.Value {
 	return nil
 }
 
-// GetFromArgsInt64 从传入的 keyword args 中提取出指定 key 对应的值
+// Deprecated: GetFromArgsInt64 从传入的 keyword args 中提取出指定 key 对应的值
 // kwargs 必须是函数所接收到的，否则会 panic
 func GetFromArgsInt64(kwargs []starlark.Tuple, key string, defaultValue int64) (int64, error) {
 	vv := GetFromArgs(kwargs, key)
@@ -54,7 +55,7 @@ func GetFromArgsInt64(kwargs []starlark.Tuple, key string, defaultValue int64) (
 	return 0, fmt.Errorf("invalid arg type")
 }
 
-// GetFromArgsBool 从传入的 keyword args 中提取出指定 key 对应的值
+// Deprecated: GetFromArgsBool 从传入的 keyword args 中提取出指定 key 对应的值
 // kwargs 必须是函数所接收到的，否则会 panic
 func GetFromArgsBool(kwargs []starlark.Tuple, key string, defaultValue bool) (bool, error) {
 	vv := GetFromArgs(kwargs, key)
