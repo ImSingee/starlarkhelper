@@ -344,13 +344,13 @@ func (e ErrArgTypeMismatch) Error() string {
 }
 
 func IsArgExist(err error) bool {
-	return errors.Is(err, ErrArgExist{})
+	return errors.As(err, &ErrArgExist{})
 }
 
 func IsArgNotExist(err error) bool {
-	return errors.Is(err, ErrArgNotExist{})
+	return errors.As(err, &ErrArgNotExist{})
 }
 
 func IsArgTypeMismatch(err error) bool {
-	return errors.Is(err, ErrArgTypeMismatch{})
+	return errors.As(err, &ErrArgTypeMismatch{})
 }
