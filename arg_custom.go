@@ -1,12 +1,10 @@
 package starlarkhelper
 
-import "go.starlark.net/starlark"
-
 var _ Arg = (*CustomTypeArg)(nil)
 
 type CustomTypeArg struct {
 	Name string
-	Type starlark.Value
+	Type interface{ Type() string }
 }
 
 func (c CustomTypeArg) isArg()                        {}
