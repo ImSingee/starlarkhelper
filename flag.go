@@ -7,7 +7,7 @@ const (
 	TypeInt    BasicType = "int"
 	TypeFloat  BasicType = "float"
 	TypeBool   BasicType = "bool"
-	TypeString BasicType = "string"
+	TypeString BasicType = "str"
 	TypeBytes  BasicType = "bytes"
 
 	TypeAny BasicType = "any"

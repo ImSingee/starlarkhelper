@@ -40,8 +40,20 @@ func IntArg(name string) Arg {
 	return &basicArg{name: name, type_: TypeInt}
 }
 
+func FloatArg(name string) Arg {
+	return &basicArg{name: name, type_: TypeFloat}
+}
+
+func BoolArg(name string) Arg {
+	return &basicArg{name: name, type_: TypeBool}
+}
+
 func StringArg(name string) Arg {
 	return &basicArg{name: name, type_: TypeString}
+}
+
+func BytesArg(name string) Arg {
+	return &basicArg{name: name, type_: TypeBytes}
 }
 
 func AnyArg(name string) Arg {
