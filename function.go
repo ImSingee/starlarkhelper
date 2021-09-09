@@ -78,7 +78,7 @@ func (f *Function) call(ctx context.Context, h *Helper) (starlark.Value, error) 
 	if f.Middleware == nil {
 		return f.Fn(ctx, h)
 	} else {
-		return f.Middleware(ctx, h)
+		return f.Middleware(ctx, h, f.Fn)
 	}
 }
 
