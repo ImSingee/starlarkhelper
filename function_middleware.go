@@ -8,6 +8,8 @@ import (
 type Middleware func(ctx context.Context, h *Helper, do BuiltinFunc) (starlark.Value, error)
 
 func ChainMiddleware(middlewares ...Middleware) Middleware {
+	middlewares = removeNilMiddleware(middlewares)
+
 	if len(middlewares) == 0 {
 		return nil
 	} else if len(middlewares) == 1 {
@@ -17,6 +19,18 @@ func ChainMiddleware(middlewares ...Middleware) Middleware {
 			return middlewares[0](ctx, h, getChainMiddleware(middlewares, 0, do))
 		}
 	}
+}
+
+func removeNilMiddleware(middlewares []Middleware) []Middleware {
+	all := make([]Middleware, 0, len(middlewares))
+
+	for _, m := range middlewares {
+		if m != nil {
+			all = append(all, m)
+		}
+	}
+
+	return all
 }
 
 func getChainMiddleware(middlewares []Middleware, curr int, finalDo BuiltinFunc) BuiltinFunc {

@@ -26,21 +26,13 @@ type StarlarkModule struct {
 }
 
 // Get 获取 StarlarkModule
-// Important: 该函数只能调用一次
-func (m *Module) Get() *StarlarkModule {
+func (m Module) Get() *StarlarkModule {
 	members := make(starlark.StringDict, len(m.PreDeclares)+len(m.Functions))
 	for _, member := range m.PreDeclares {
 		members[member.Name] = member.getForModule(m.Name)
 	}
 	for _, member := range m.Functions {
-		if m.FuncMiddleware != nil {
-			if member.Middleware == nil {
-				member.Middleware = m.FuncMiddleware
-			} else {
-				member.Middleware = ChainMiddleware(m.FuncMiddleware, member.Middleware)
-			}
-		}
-
+		member.Middleware = ChainMiddleware(m.FuncMiddleware, member.Middleware)
 		member.moduleName = m.Name
 		members[member.FuncName] = member
 	}
@@ -54,6 +46,6 @@ func (m *Module) Get() *StarlarkModule {
 			Name:    m.Name,
 			Members: members,
 		},
-		internal: m,
+		internal: &m,
 	}
 }
