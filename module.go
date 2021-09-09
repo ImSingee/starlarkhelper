@@ -10,6 +10,7 @@ type Module struct {
 
 	Short string // module 功能简介
 
+	SubModules  []*Module
 	PreDeclares []*PreDeclaredValue
 	Functions   []*Function
 	Structs     []*StructDescription
@@ -28,6 +29,10 @@ type StarlarkModule struct {
 // Get 获取 StarlarkModule
 func (m Module) Get() *StarlarkModule {
 	members := make(starlark.StringDict, len(m.PreDeclares)+len(m.Functions))
+	for _, member := range m.SubModules {
+		member.FuncMiddleware = ChainMiddleware(m.FuncMiddleware, member.FuncMiddleware)
+		members[member.Name] = member.Get()
+	}
 	for _, member := range m.PreDeclares {
 		members[member.Name] = member.getForModule(m.Name)
 	}
