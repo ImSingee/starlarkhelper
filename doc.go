@@ -1,6 +1,7 @@
 package starlarkhelper
 
 import (
+	"context"
 	"fmt"
 	"go.starlark.net/starlark"
 	"strings"
@@ -69,7 +70,7 @@ func HelpFunc() *Function {
 		FuncName: "help",
 		Short:    "查看帮助信息",
 		Long:     "",
-		Fn: func(h Helper) (starlark.Value, error) {
+		Fn: func(_ context.Context, h *Helper) (starlark.Value, error) {
 			if err := h.CheckExactArgs(1); err != nil {
 				return nil, err
 			}

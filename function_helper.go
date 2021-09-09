@@ -1,14 +1,14 @@
 package starlarkhelper
 
 import (
+	"context"
 	"fmt"
 
-	"go.starlark.net/starlark"
-
 	"github.com/pkg/errors"
+	"go.starlark.net/starlark"
 )
 
-type BuiltinFunc func(h Helper) (starlark.Value, error)
+type BuiltinFunc func(ctx context.Context, h *Helper) (starlark.Value, error)
 type UnpackArgsFunc func(pairs ...interface{}) error
 
 type Helper struct {
@@ -16,14 +16,12 @@ type Helper struct {
 	Thread         *starlark.Thread
 	Fn             *Function
 	PositionalArgs []starlark.Value
+	Kwargs         []starlark.Tuple // original Kwargs
 	KeywordArgs    starlark.StringDict
-
-	Args   starlark.Tuple   // Deprecated: Args
-	Kwargs []starlark.Tuple // Deprecated: Kwargs
 
 	Err error
 
-	kwargs []starlark.Tuple // original kwargs
+	Args starlark.Tuple // Deprecated: please use PositionalArgs
 }
 
 func (h *Helper) Print(msg string) {
@@ -39,7 +37,7 @@ func (h *Helper) withErrorHandler(f func() error) *Helper {
 
 func (h *Helper) UnpackArgs(pairs ...interface{}) *Helper {
 	return h.withErrorHandler(func() error {
-		return starlark.UnpackArgs(h.Name, h.PositionalArgs, h.kwargs, pairs...)
+		return starlark.UnpackArgs(h.Name, h.PositionalArgs, h.Kwargs, pairs...)
 	})
 }
 
@@ -52,7 +50,7 @@ func (h *Helper) UnpackArgsIgnoreKeyword(pairs ...interface{}) *Helper {
 
 func (h *Helper) UnpackPositionalArgs(min int, vars ...interface{}) *Helper {
 	return h.withErrorHandler(func() error {
-		return starlark.UnpackPositionalArgs(h.Name, h.PositionalArgs, h.kwargs, min, vars...)
+		return starlark.UnpackPositionalArgs(h.Name, h.PositionalArgs, h.Kwargs, min, vars...)
 	})
 }
 
@@ -80,7 +78,7 @@ func (h *Helper) UnpackBasicArgs(pairs ...interface{}) *Helper {
 			pairs[i*2+1] = &ppp[i][2] // 指向 starlark 类型的指针
 		}
 
-		err := starlark.UnpackArgs(h.Name, h.PositionalArgs, h.kwargs, pairs...)
+		err := starlark.UnpackArgs(h.Name, h.PositionalArgs, h.Kwargs, pairs...)
 		if err != nil {
 			return err
 		}
@@ -248,7 +246,7 @@ func (h *Helper) GetKeywordArgsStringListWithDefault(key string, defaultValue []
 
 // ArgsCount 返回传入的 args 数量
 func (h *Helper) ArgsCount() int {
-	return len(h.PositionalArgs) + len(h.kwargs)
+	return len(h.PositionalArgs) + len(h.Kwargs)
 }
 
 // CheckExactArgs 检查是否传递了指定数量的参数，如果否则返回 error
@@ -282,7 +280,7 @@ func (h *Helper) GetFirstArg() (starlark.Value, error) {
 	if len(h.PositionalArgs) > 0 {
 		return h.PositionalArgs[0], nil
 	} else {
-		return h.kwargs[0].Index(1), nil
+		return h.Kwargs[0].Index(1), nil
 	}
 }
 
