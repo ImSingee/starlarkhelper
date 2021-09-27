@@ -30,6 +30,7 @@ type StarlarkModule struct {
 func (m Module) Get() *StarlarkModule {
 	members := make(starlark.StringDict, len(m.PreDeclares)+len(m.Functions))
 	for _, member := range m.SubModules {
+		member = member.Copy()
 		member.FuncMiddleware = ChainMiddleware(m.FuncMiddleware, member.FuncMiddleware)
 		members[member.Name] = member.Get()
 	}
@@ -37,6 +38,7 @@ func (m Module) Get() *StarlarkModule {
 		members[member.Name] = member.getForModule(m.Name)
 	}
 	for _, member := range m.Functions {
+		member = member.Copy()
 		member.Middleware = ChainMiddleware(m.FuncMiddleware, member.Middleware)
 		member.moduleName = m.Name
 		members[member.FuncName] = member
@@ -53,4 +55,8 @@ func (m Module) Get() *StarlarkModule {
 		},
 		internal: &m,
 	}
+}
+
+func (m Module) Copy() *Module {
+	return &m
 }

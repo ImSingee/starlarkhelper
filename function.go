@@ -89,3 +89,7 @@ func convertKwargsToStringDict(kwargs []starlark.Tuple) starlark.StringDict {
 	}
 	return d
 }
+
+func (f Function) Copy() *Function {
+	return &f
+}

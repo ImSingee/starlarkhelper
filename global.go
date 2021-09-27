@@ -18,9 +18,11 @@ func ToStringDict(globalMiddleware Middleware, elements ...map[string]interface{
 		for k, e := range element {
 			switch e := e.(type) {
 			case *Function:
+				e = e.Copy()
 				e.Middleware = ChainMiddleware(globalMiddleware, e.Middleware)
 				d[k] = e
 			case *Module:
+				e = e.Copy()
 				e.FuncMiddleware = ChainMiddleware(globalMiddleware, e.FuncMiddleware)
 				d[k] = e.Get()
 			case starlark.Value:
