@@ -5,6 +5,36 @@ import (
 	"go.starlark.net/starlark"
 )
 
+func TraverseLists(values []starlark.Value, f func(starlark.Value) error) error {
+	for _, value := range values {
+		err := TraverseList(value, f)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func TraverseList(value starlark.Value, f func(starlark.Value) error) error {
+	if value == nil {
+		return nil
+	}
+
+	if list, ok := value.(*starlark.List); ok {
+		for i := 0; i < list.Len(); i++ {
+			err := f(list.Index(i))
+			if err != nil {
+				return err
+			}
+		}
+
+		return nil
+	} else {
+		return f(value)
+	}
+}
+
 func ToStringList(value starlark.Value) ([]string, error) {
 	if value == nil {
 		return nil, nil
