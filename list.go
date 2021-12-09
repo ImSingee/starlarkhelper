@@ -64,3 +64,13 @@ func ToStringList(value starlark.Value) ([]string, error) {
 
 	return nil, fmt.Errorf("invalid type %T", value)
 }
+
+func NewListFromStrings(elems []string) *starlark.List {
+	values := make([]starlark.Value, len(elems))
+
+	for i, e := range elems {
+		values[i] = starlark.String(e)
+	}
+
+	return starlark.NewList(values)
+}
